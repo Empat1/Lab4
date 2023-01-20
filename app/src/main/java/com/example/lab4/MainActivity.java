@@ -70,24 +70,31 @@ public class MainActivity extends AppCompatActivity {
                 arr = readTable(row, column);
                 int[][] read = readTable(row , column);
                 int[][] path = getAnswer(read);
-                createTable(textViewTableLayout , t(path));
+                createTable(textViewTableLayout , path);
             }
         });
     }
 
 
     int arr[][];
-    private int[] out;
+    int[] d;
+    private ArrayList<Integer> m0;
+    private ArrayList<Integer> m1;
+    private ArrayList<Integer> m11;
+    private ArrayList<Integer> m2;
+    private int inf = 9999;
 
     private int[][] getAnswer(int[][] arr){
         int[][] ans = new int[column][row];
 
         for(int i =0 ; i < arr.length; i++){
-            startFindPath(i);
+            startStep(i);
+            nextStep();
+            System.out.println(d);
             for(int j =0; j < arr.length; j++){
                 if(i == j) ans[i][j] = 0;
-                else if(out[j] == 0) ans[i][j] = -1;
-                else ans[i][j] = out[j];
+                else if(d[j] == inf) ans[i][j] = inf;
+                else ans[i][j] = d[j];
             }
         }
 
@@ -95,33 +102,88 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private void startFindPath(int start){
-        out = new int[arr.length];
+
+    private void nextStep(){
+        int u = -1;
+
+        while (!m1.isEmpty() || !m11.isEmpty()){
+            u = getU();
+            for(int i =0 ; i < arr.length;i++) { //проход по ребрам
+                if(arr[u][i] != 0){
+                    switch (getM(i)){
+                        case 1:
+                            m1.add(i);
+                            m2.remove(getElement(m2, i));
+                            d[i] = Math.min(d[i], d[u] + arr[u][i]);
+                            break;
+                        case 2:
+                            d[i] = Math.min(d[i], d[u] + arr[u][i]);
+                            break;
+                        case 3:
+                            if(d[i] > d[u] + arr[u][i]){
+                                m11.add(i);
+                                m0.remove(getElement(m0,i));
+                                d[i] = d[u] + arr[u][i];
+                            }
+                    }
+                }
+            }
+
+            m0.add(u);
+        }
+    }
+
+    void startStep(int a){
+        d = new int[arr.length];
+        m0 = new ArrayList<>();
+        m1 = new ArrayList<>();
+        m11 = new ArrayList<>();
+        m2 = new ArrayList<>();
+
+        m1.add(a);
+
+        for(int i =0 ;i < arr.length;i++){
+            d[i] = inf;
+        }
+
+        d[a] = 0;
 
         for(int i = 0; i < arr.length; i++){
-            if(arr[i][start] == 1)
-                findPath(start, i , 1);
+            if(i != a){
+                m2.add(i);
+            }
+        }
+
+        System.out.println();
+    }
+
+    private int getElement(ArrayList<Integer> m , int element){
+        for(int i = 0 ;i < m.size();i++)
+            if(m.get(i) == element) return i;
+        return -1;
+    }
+
+    private int getU(){
+        if(m11.isEmpty()){
+            int out = m1.get(0);
+            m1.remove(0);
+            return out;
+        }else{
+            int out = m11.get(0);
+            m11.remove(0);
+            return out;
         }
     }
 
-
-
-    private void findPath(int start, int h , int step) {
-        if (h == start){
-            return;
-        }else if(out[h] == 0) {
-            out[h] = step;
-        }else if(out[h] > step) {
-            out[h] = step;
-        }else {
-            return;
-        }
-
-        for(int i = 0; i < arr.length;i++){
-            if(arr[i][h] == 1)
-                findPath(h, i , step+1);
-        }
+    private int getM(int n){
+        for(int m : m2 ) if(m == n) return 1;
+        for(int m : m1 ) if(m == n) return 2;
+        for(int m : m11 ) if(m == n) return 2;
+        for(int m : m0 ) if(m == n) return 3;
+        return -1;
     }
+
+
 
 
     int[][] t(int[][] arr){
@@ -191,7 +253,7 @@ public class MainActivity extends AppCompatActivity {
 
             for(int j = 0; j < colums;j++){
                 TextView cell = new TextView(this);
-                if(arr[i][j] < 0) cell.setText("-");
+                if(arr[i][j] == inf) cell.setText("-");
                 else cell.setText(arr[i][j] + "");
                 cell.setGravity(Gravity.CENTER_HORIZONTAL);
                 cell.setTextSize(18);
@@ -236,7 +298,7 @@ public class MainActivity extends AppCompatActivity {
             for(int j = 0; j < colums;j++){
                 EditText editText = new EditText(this);
                 editText.setId(i *100 + j);
-                editText.setInputType(InputType.TYPE_CLASS_NUMBER);
+                editText.setInputType(InputType.TYPE_NUMBER_FLAG_SIGNED);
                 if(arr != null && arr.length >= i && arr[0].length >= j)
                     editText.setText(arr[i][j] + "");
                 tableRow.addView(editText);
